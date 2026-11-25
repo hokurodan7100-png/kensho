@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+kensho.db
+browser_profile/
+autofill.log
+screenshots/
+*.log
+.pytest_cache/
+*.db

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% macro post(action, label, cls="") -%}
+<form class="inline" method="post" action="{{ action }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="{{ cls }}">{{ label }}</button></form>
+{%- endmacro %}
+{% block content %}
+
+{% if not has_profile %}
+<div class="flash error">自動入力を使うには、先に <a href="{{ url_for('profile') }}">プロフィール</a> を登録してください。</div>
+{% endif %}
+
+{% if soon %}
+<div class="card" style="border-color:#fecaca">
+  <b class="dl-red">⏰ 締切が 3 日以内で、まだ応募していない懸賞（{{ soon|length }} 件）</b>
+  <ul style="margin:6px 0 0">
+  {% for c in soon %}<li><a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.title }}</a> — {{ c.deadline }}（{% set d = c.deadline|days_left %}{{ '今日まで' if d == 0 else '残り %d 日' % d }}）</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card row" style="justify-content:space-between">
+  <div class="row">
+    {% for key, label in STATUSES.items() %}<span class="tag {{ key }}">{{ label }} {{ stats.get(key, 0) }}</span>{% endfor %}
+  </div>
+  <div class="row">
+    {{ post(url_for('run_now'), '🤖 ワーカーで今すぐ取り込み＋事前チェック', 'primary') }}
+    {{ post(url_for('collect'), '🔄 取り込みだけ') }}
+  </div>
+</div>
+
+<form class="card row" method="get">
+  <select name="status" style="width:auto">
+    <option value="">すべての状態</option>
+    {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if status==key }}>{{ label }}</option>{% endfor %}
+  </select>
+  <input name="q" value="{{ q }}" placeholder="キーワード（賞品名など）" style="flex:1; min-width:160px">
+  <label class="row" style="gap:4px"><input type="checkbox" name="all" value="1" style="width:auto" {{ 'checked' if show_all }}> 締切済みも表示</label>
+  <button>絞り込む</button>
+</form>
+
+<div class="card">
+{% if campaigns %}
+<table>
+  <tr><th>締切</th><th>懸賞</th><th class="hide-sm">状態</th><th>操作</th></tr>
+  {% for c in campaigns %}
+  {% set d = c.deadline|days_left %}
+  <tr>
+    <td style="white-space:nowrap">
+      {% if c.deadline %}
+        <span class="{{ 'dl-past' if d < 0 else 'dl-red' if d <= 3 else 'dl-orange' if d <= 7 else '' }}">{{ c.deadline[5:]|replace('-', '/') }}</span>
+        <div class="muted">{{ '締切済み' if d < 0 else '今日まで' if d == 0 else 'あと%d日' % d }}</div>
+      {% else %}<span class="muted">不明</span>{% endif %}
+    </td>
+    <td>
+      <a href="{{ c.url }}" target="_blank" rel="noopener"><b>{{ c.title }}</b></a>
+      {% if c.prize %}<div>🎁 {{ c.prize }}</div>{% endif %}
+      <div class="muted">{{ c.source }}{% if c.note %} ・ {{ c.note[:80] }}{% endif %}</div>
+      {% if c.result %}<div class="result {{ c.status }}">{{ '⚠ ' if c.status == 'manual' }}{{ c.result }}
+        {% if c.screenshot %}<a href="{{ url_for('screenshot', name=c.screenshot) }}" target="_blank">画面を見る</a>{% endif %}</div>{% endif %}
+    </td>
+    <td class="hide-sm"><span class="tag {{ c.status }}">{{ STATUSES[c.status] }}</span>
+      {% if c.applied_at %}<div class="muted">{{ c.applied_at[:10] }}</div>{% endif %}</td>
+    <td>
+      <div class="row" style="gap:4px">
+        {% if c.status == 'pending' %}
+          <a class="btn primary" href="{{ url_for('review') }}#c{{ c.id }}">確認して承認</a>
+          {{ post(url_for('set_status', cid=c.id, status='skipped'), 'スキップ') }}
+        {% elif c.status == 'approved' %}
+          {{ post(url_for('unapprove', cid=c.id), '承認を取り消す') }}
+        {% elif c.status in ('new', 'manual') %}
+          {{ post(url_for('autofill', cid=c.id), '✍️ 自動入力で開く', 'primary') }}
+          {{ post(url_for('set_status', cid=c.id, status='applied'), '応募済み') }}
+          {{ post(url_for('set_status', cid=c.id, status='skipped'), 'スキップ') }}
+          {% if c.status == 'manual' %}{{ post(url_for('recheck', cid=c.id), '再チェック') }}{% endif %}
+        {% elif c.status == 'applied' %}
+          {{ post(url_for('set_status', cid=c.id, status='won'), '🎉 当選') }}
+          {{ post(url_for('set_status', cid=c.id, status='lost'), '落選') }}
+        {% endif %}
+        <a class="btn" href="{{ url_for('edit', cid=c.id) }}">編集</a>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">懸賞がありません。「＋ 追加」から手動で登録するか、「収集元」に RSS を登録して取り込んでください。</p>
+{% endif %}
+</div>
+{% endblock %}

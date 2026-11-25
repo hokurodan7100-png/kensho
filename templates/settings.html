@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h2 style="margin-top:0">LINE 通知</h2>
+  <p class="muted">LINE 公式アカウント（Messaging API）から自分に通知を送ります。設定の手順は README の「LINE 通知の設定」を見てください。通知には件数と懸賞のタイトルだけを入れ、住所などは送りません。</p>
+  <div class="grid">
+    <div><label class="f">チャネルアクセストークン（長期）</label>
+      <input type="password" name="line_token" placeholder="{{ '設定済み（変更するときだけ入力）' if has_token else '未設定' }}" autocomplete="off">
+      {% if has_token %}<label class="row muted" style="gap:4px"><input type="checkbox" name="clear_token" value="1" style="width:auto"> トークンを削除する</label>{% endif %}</div>
+    <div><label class="f">あなたのユーザー ID（U から始まる）</label><input name="line_user_id" value="{{ s.get('line_user_id', '') }}" placeholder="U1234..."></div>
+  </div>
+
+  <h2>ワーカーの動き</h2>
+  <div class="grid">
+    <div><label class="f">取り込み・事前チェックの間隔（時間）</label><input name="collect_hours" value="{{ s.get('collect_hours', '') }}" placeholder="{{ defaults.collect_hours }}"></div>
+    <div><label class="f">1 回に事前チェックする件数</label><input name="check_limit" value="{{ s.get('check_limit', '') }}" placeholder="{{ defaults.check_limit }}"></div>
+    <div><label class="f">1 回に送信する件数</label><input name="submit_limit" value="{{ s.get('submit_limit', '') }}" placeholder="{{ defaults.submit_limit }}"></div>
+    <div><label class="f">送信の間隔（秒）</label><input name="submit_interval" value="{{ s.get('submit_interval', '') }}" placeholder="{{ defaults.submit_interval }}"></div>
+    <div><label class="f">毎日のまとめを送る時刻（0〜23 時）</label><input name="notify_hour" value="{{ s.get('notify_hour', '') }}" placeholder="{{ defaults.notify_hour }}"></div>
+  </div>
+  <p class="row"><button class="primary">保存</button></p>
+</form>
+<form method="post" action="{{ url_for('test_line') }}" class="card row">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button>LINE にテスト通知を送る</button>
+</form>
+
+<div class="card">
+  <h2 style="margin-top:0">ワーカーの状態</h2>
+  <p>{{ '🟢 動作中' if worker_alive else '🔴 停止中（worker.py を起動してください）' }} — {{ worker_kv.get('state', '') }}</p>
+  <p class="muted">最終確認 {{ (worker_kv.get('heartbeat') or '-')|replace('T', ' ') }} ／ 最終取り込み {{ (worker_kv.get('last_collect') or '-')|replace('T', ' ') }}</p>
+  <h3>記録</h3>
+  <table>
+    {% for e in events %}<tr><td class="muted" style="white-space:nowrap">{{ e.at[5:16]|replace('T', ' ') }}</td>
+      <td style="{{ 'color:var(--red)' if e.level == 'error' }}">{{ e.message }}</td></tr>{% else %}<tr><td class="muted">まだ記録はありません。</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

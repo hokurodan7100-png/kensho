@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0">収集元（RSS / Atom）</h2>
+  <p class="muted">懸賞まとめサイトやブログの RSS フィードを登録すると、「収集元から取り込む」で新しい懸賞がまとめて一覧に入ります。締切日は記事の本文から推定します。</p>
+  {% if feeds %}
+  <table>
+    <tr><th>名前</th><th>URL</th><th>最終取得</th><th></th></tr>
+    {% for f in feeds %}
+    <tr style="{{ '' if f.enabled else 'opacity:.5' }}">
+      <td>{{ f.name }}</td>
+      <td style="word-break:break-all" class="muted">{{ f.url }}</td>
+      <td class="muted">{{ (f.last_fetched or '-')[:16]|replace('T', ' ') }}
+        {% if f.last_error %}<div style="color:var(--red)">⚠ {{ f.last_error[:80] }}</div>{% endif %}</td>
+      <td class="row" style="gap:4px">
+        <form class="inline" method="post" action="{{ url_for('feed_toggle', fid=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>{{ '停止' if f.enabled else '再開' }}</button></form>
+        <form class="inline" method="post" action="{{ url_for('feed_delete', fid=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>削除</button></form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  <form method="post" class="row" style="margin-top:12px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input name="name" placeholder="名前" style="width:160px">
+    <input name="url" placeholder="フィードの URL（https://…/feed）" style="flex:1; min-width:220px" required>
+    <button class="primary">追加</button>
+  </form>
+</div>
+
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="action" value="filter">
+  <h3 style="margin-top:0">取り込み時のキーワード絞り込み</h3>
+  <p class="muted">カンマ区切り。「必ず含む」が空ならすべて取り込みます。</p>
+  <div class="grid">
+    <div><label class="f">必ず含む（どれか 1 つ）</label><input name="include" value="{{ f.get('include', '') }}" placeholder="例：Web応募, フォーム"></div>
+    <div><label class="f">除外する</label><input name="exclude" value="{{ f.get('exclude', '') }}" placeholder="例：ハガキ, レシート, X(Twitter)"></div>
+  </div>
+  <p><button class="primary">保存</button></p>
+</form>
+{% endblock %}

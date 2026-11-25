@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}懸賞マネージャー{% endblock %}</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --red:#dc2626; --orange:#ea580c; --green:#16a34a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 system-ui, "Hiragino Sans", "Yu Gothic UI", sans-serif; }
+  header { background:#111827; color:#fff; padding:10px 20px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  header a { color:#d1d5db; text-decoration:none; } header a:hover, header a.on { color:#fff; }
+  header .brand { font-weight:700; color:#fff; margin-right:auto; }
+  main { max-width:1100px; margin:20px auto; padding:0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .flash { padding:10px 14px; border-radius:8px; margin-bottom:10px; background:#ecfdf5; border:1px solid #a7f3d0; }
+  .flash.error { background:#fef2f2; border-color:#fecaca; }
+  button, .btn { font:inherit; padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; text-decoration:none; color:inherit; display:inline-block; }
+  button.primary, .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button:hover, .btn:hover { filter:brightness(.95); }
+  input, select, textarea { font:inherit; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; width:100%; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:13px; color:var(--muted); font-weight:600; }
+  .muted { color:var(--muted); font-size:13px; }
+  .tag { display:inline-block; white-space:nowrap; padding:0 8px; border-radius:99px; font-size:12px; background:#f3f4f6; }
+  .tag.new { background:#dbeafe; } .tag.applied { background:#e0e7ff; } .tag.won { background:#fde68a; } .tag.lost { background:#f3f4f6; } .tag.skipped { background:#f3f4f6; color:var(--muted); }
+  .dl-red { color:var(--red); font-weight:700; } .dl-orange { color:var(--orange); font-weight:600; } .dl-past { color:var(--muted); text-decoration:line-through; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  form.inline { display:inline; }
+  label.f { display:block; font-size:13px; color:var(--muted); margin-bottom:2px; }
+  .badge { background:#ef4444; color:#fff; border-radius:99px; padding:0 7px; font-size:12px; }
+  header .worker { font-size:12px; color:#f87171; } header .worker.on { color:#4ade80; }
+  .tag.pending { background:#fef3c7; } .tag.approved { background:#dcfce7; } .tag.manual { background:#fee2e2; }
+  .result { font-size:13px; margin-top:2px; } .result.manual { color:var(--red); }
+  @media (max-width: 720px) { .hide-sm { display:none; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="{{ url_for('index') }}">🎁 懸賞マネージャー</a>
+  <a href="{{ url_for('index') }}" class="{{ 'on' if request.endpoint=='index' }}">懸賞一覧</a>
+  <a href="{{ url_for('review') }}" class="{{ 'on' if request.endpoint=='review' }}">承認{% if pending_count %} <span class="badge">{{ pending_count }}</span>{% endif %}</a>
+  <a href="{{ url_for('edit') }}" class="{{ 'on' if request.endpoint=='edit' }}">＋ 追加</a>
+  <a href="{{ url_for('feeds') }}" class="{{ 'on' if request.endpoint=='feeds' }}">収集元</a>
+  <a href="{{ url_for('profile') }}" class="{{ 'on' if request.endpoint=='profile' }}">プロフィール</a>
+  <a href="{{ url_for('settings') }}" class="{{ 'on' if request.endpoint=='settings' }}">設定</a>
+  <span class="worker {{ 'on' if worker_alive }}" title="{{ worker_state }}">● {{ 'ワーカー動作中' if worker_alive else 'ワーカー停止中' }}</span>
+</header>
+<main>
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

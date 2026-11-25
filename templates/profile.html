@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h2 style="margin-top:0">応募用プロフィール</h2>
+  <p class="muted">応募フォームの自動入力に使います。データはこの PC の kensho.db にだけ保存され、外部には送られません。</p>
+  <div class="grid">
+    {% for key, label, example in fields %}
+    <div><label class="f">{{ label }}</label><input name="{{ key }}" value="{{ p.get(key, '') }}" placeholder="例：{{ example }}"></div>
+    {% endfor %}
+  </div>
+  <p><button class="primary">保存</button></p>
+</form>
+{% endblock %}

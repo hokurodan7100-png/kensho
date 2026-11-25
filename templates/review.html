@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0">送信待ち（{{ pending|length }} 件）</h2>
+  <p class="muted">ワーカーが応募ページを開いて入力を試し、すべて自動で入力できた懸賞です。入力内容と、チェックを入れる項目（応募規約への同意など）を確認して、送信してよいものを承認してください。承認すると、規約にも同意したことになります。<b>応募規約で自動での応募が禁止されている懸賞は承認しないでください。</b></p>
+  {% if not line_ok %}<p class="muted">💡 「設定」で LINE を登録すると、送信待ちが増えたときに通知が届きます。</p>{% endif %}
+</div>
+
+{% if pending %}
+<form method="post" action="{{ url_for('approve') }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="card row" style="justify-content:space-between; position:sticky; top:0; z-index:1">
+    <label class="row" style="gap:6px"><input type="checkbox" style="width:auto" onclick="document.querySelectorAll('input[name=ids]').forEach(e => e.checked = this.checked)"> すべて選択</label>
+    <button class="primary">選択した懸賞を承認して送信する</button>
+  </div>
+  {% for c in pending %}
+  {% set chk = c.check_json|fromjson %}
+  {% set d = c.deadline|days_left %}
+  <div class="card" id="c{{ c.id }}">
+    <label class="row" style="gap:8px; align-items:flex-start">
+      <input type="checkbox" name="ids" value="{{ c.id }}" style="width:auto; margin-top:6px">
+      <span><b>{{ c.title }}</b>
+        <span class="muted">{% if c.deadline %}締切 {{ c.deadline }}（{{ '今日まで' if d == 0 else 'あと%d日' % d }}）{% else %}締切不明{% endif %}</span></span>
+    </label>
+    <p class="muted" style="margin:4px 0">応募ページ：<a href="{{ chk.form_url }}" target="_blank" rel="noopener">{{ chk.form_url }}</a>（応募規約はここから確認できます）</p>
+    <table>
+      {% for f in chk.fields %}<tr><th style="width:30%">{{ f.label or '（名前なし）' }}</th><td>{{ f.value }}</td></tr>{% endfor %}
+      {% for u in chk.unknownFields %}<tr><th>{{ u.label or '（名前なし）' }}</th><td class="muted">空欄のまま送信されます（任意項目）</td></tr>{% endfor %}
+      {% for cb in chk.checkboxes %}<tr><th>☑ {{ cb.label }}</th><td>
+        {% if cb.agree or cb.required %}<b>チェックを入れます</b>{% else %}<span class="muted">{{ 'チェック済みのまま' if cb.checked else 'チェックしません' }}</span>{% endif %}</td></tr>{% endfor %}
+      <tr><th>押すボタン</th><td>「{{ chk.submit_label }}」→ 確認画面があればその「送信」まで</td></tr>
+    </table>
+    <div class="row" style="margin-top:8px; gap:4px">
+      <button formaction="{{ url_for('autofill', cid=c.id) }}" formmethod="post">✍️ 自分で開いて応募する</button>
+      <button formaction="{{ url_for('set_status', cid=c.id, status='skipped') }}" formmethod="post">スキップ</button>
+    </div>
+  </div>
+  {% endfor %}
+</form>
+{% else %}
+<div class="card muted">送信待ちの懸賞はありません。</div>
+{% endif %}
+
+{% if approved %}
+<div class="card">
+  <h3 style="margin-top:0">送信予定（承認済み・{{ approved|length }} 件）</h3>
+  <ul>{% for c in approved %}<li>{{ c.title }}
+    <form class="inline" method="post" action="{{ url_for('unapprove', cid=c.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>取り消す</button></form></li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h2 style="margin-top:0">{{ '懸賞を編集' if cid else '懸賞を追加' }}</h2>
+  <div class="grid">
+    <div style="grid-column:1/-1"><label class="f">応募ページの URL *</label><input name="url" required value="{{ c.url if c else '' }}" placeholder="https://"></div>
+    <div style="grid-column:1/-1"><label class="f">タイトル</label><input name="title" value="{{ c.title if c else '' }}"></div>
+    <div><label class="f">賞品</label><input name="prize" value="{{ c.prize if c else '' }}"></div>
+    <div><label class="f">締切日</label><input type="date" name="deadline" value="{{ (c.deadline or '') if c else '' }}"></div>
+    {% if cid %}
+    <div><label class="f">状態</label><select name="status">
+      {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if c.status==key }}>{{ label }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+    <div style="grid-column:1/-1"><label class="f">メモ</label><textarea name="note" rows="3">{{ c.note if c else '' }}</textarea></div>
+  </div>
+  <p class="row"><button class="primary">保存</button> <a class="btn" href="{{ url_for('index') }}">戻る</a></p>
+</form>
+{% if cid %}
+<form method="post" action="{{ url_for('delete', cid=cid) }}" onsubmit="return confirm('この懸賞を削除しますか？')">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button style="color:var(--red)">この懸賞を削除</button>
+</form>
+{% endif %}
+{% endblock %}
