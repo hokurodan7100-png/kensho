@@ -33,15 +33,26 @@ Web フォーム応募型の懸賞を **集める → 管理する → 応募フ
 
 ## セットアップ
 
+### かんたんセットアップ（おすすめ）
+
+1. [Python](https://www.python.org/downloads/) 3.10 以上を入れる（Windows はインストール画面で「Add python.exe to PATH」にチェック）
+2. このリポジトリをダウンロードする（GitHub の緑の「Code」→「Download ZIP」で展開するか、`git clone`）
+3. フォルダの中の次のファイルをダブルクリックする
+   - Windows：`setup_windows.bat`
+   - Mac：`setup_mac.command`（初回は右クリック→「開く」）
+4. 「セットアップが終わりました」と出たら、`start_windows.bat`（Mac は `start_mac.command`）をダブルクリックする
+5. ブラウザで http://127.0.0.1:5000 を開き、まず「プロフィール」を登録する
+
+### 手動でセットアップする場合
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 playwright install chromium      # Chrome が入っていれば不要（普段の Chrome を使います）
-python app.py
+python app.py                    # 管理画面
+python worker.py                 # ワーカー（別のウィンドウで）
 ```
-
-ブラウザで http://127.0.0.1:5000 を開き、まず「プロフィール」を登録してください。
 
 ## 使い方
 
@@ -124,3 +135,5 @@ LINE Notify は終了したため、自分専用の LINE 公式アカウント�
 pip install pytest
 python -m pytest tests
 ```
+
+GitHub に push すると、GitHub Actions で自動的にテストが実行されます（`.github/workflows/test.yml`）。
